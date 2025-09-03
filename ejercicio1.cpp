@@ -54,7 +54,7 @@ class Avl{
         A = B;
     }
 
-    bool insertarRec(NodoAvl*& raiz, int id, string nombre, int puntaje){
+    void insertarRec(NodoAvl*& raiz, int id, string nombre, int puntaje){
         if (raiz==NULL){
             raiz=new NodoAvl(puntaje, id, nombre);
             if(cantidadTotal==0){
@@ -63,12 +63,31 @@ class Avl{
                 if (this->top1->puntaje<puntaje || (this->top1->puntaje==puntaje && this->top1->id>id)) this->top1=raiz;
             }
             this->cantidadTotal++;
+        }else if(raiz->id<id){
+            insertarRec(raiz->der, id, nombre, puntaje);
+        }else if(raiz->id>id){
+            insertarRec(raiz->izq, id, nombre, puntaje);
+        }else return;
+        actualizarAltura(raiz);
+        int balance=getBalance(raiz);
+
+        // caso izquierda izquierda
+        if(balance > 1 && raiz->izq->id > id) {
+            rotacionDerecha(raiz);
+        }else if( balance > 1 && raiz->izq->id < id) { // caso izquierda derecha
+            rotacionIzquierda(raiz->izq);
+            rotacionDerecha(raiz);
+        }else if(balance < -1 && raiz->der->id < id) { //caso derecha derecha
+            rotacionIzquierda(raiz);
+        }else if( balance > 1 && raiz->der->id > id) { //caso derecha izquierda
+            rotacionDerecha(raiz->der);
+            rotacionIzquierda(raiz);
         }
     }
     public:
 
     void insertar(int id, string nombre, int puntaje){
-        
+        insertarRec(this->raiz, id, nombre, puntaje);
     }
 };
 int main()
