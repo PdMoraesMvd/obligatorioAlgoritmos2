@@ -24,28 +24,33 @@ struct NodoAvl2{
     NodoAvl2(int _puntaje):puntaje(_puntaje), altura(1), cantidad (1), izq(NULL), der(NULL){}
 };
 
-template <class T>
+
 class Avl{
     NodoAvl* raiz;
     int cantidadTotal;
     NodoAvl* topUno;
     NodoAvl2* raizPuntaje;
     bool* estaId;
+
+    template <class T>
     int alturaSegura(T* nodo) {
         if(nodo == NULL) return 0;
         return nodo->altura;
     }
 
+    template <class T>
     void actualizarAltura(T* nodo) {
         if(nodo == NULL) return;
         nodo->altura = 1 + max(alturaSegura(nodo->izq), alturaSegura(nodo->der));
     }
 
+    template <class T>
     int getBalance(T* nodo) {
         if(nodo == NULL) return 0;
         return alturaSegura(nodo->izq) - alturaSegura(nodo->der);
     }
 
+    template <class T>
     void rotacionDerecha(T*& B){
         T* A=B->izq;
         T* T2=A->der;
@@ -56,6 +61,7 @@ class Avl{
         B=A;
     }
 
+    template <class T>
     void rotacionIzquierda(T*& A){
         T* B = A->der;
         T*T2=B->izq; 
@@ -127,7 +133,7 @@ class Avl{
             cout << "jugador_no_encontrado" << endl;
         }else if(raiz->id > id){
             encontrarRec(raiz->izq, id);
-        }else if(raiz->id > id){
+        }else if(raiz->id < id){
             encontrarRec(raiz->der, id);
         }else{
             cout << raiz->nombre <<  " " << raiz->puntaje << endl;
@@ -177,11 +183,34 @@ class Avl{
 };
 int main()
 {
+    Avl* arbol = new Avl();
     int n;
-    cout << "ingrese la cantidad de comandos a ejecutar" << endl;
     cin >> n;
+
     for(int i=0;i<n;i++){
-        
+        int id;
+        string nombre;
+        int puntaje;
+        string operacion;
+        cin >> operacion;
+        if(operacion == "add" || operacion == "ADD"){
+            cin >> id;
+            cin >> nombre;
+            cin >> puntaje;
+            arbol->add(id,nombre, puntaje);
+        }else if(operacion == "top1" || operacion == "TOP1"){
+            arbol->top1();
+        }else if(operacion == "count" || operacion == "COUNT"){
+            arbol->count();
+        }else if(operacion == "find" || operacion == "FIND"){
+            cin >> id;
+            arbol->find(id);
+        }else if(operacion == "rank" || operacion == "RANK"){
+            cin >> puntaje;
+            arbol->rank(puntaje);
+        }else{
+            cout << "no ingresaste bien la operacion, perdiste un intento"; 
+        }
     }
     
 }
