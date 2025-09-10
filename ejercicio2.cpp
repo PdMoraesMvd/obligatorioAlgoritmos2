@@ -16,10 +16,28 @@ struct arrayHash{
     arrayHash():dominio(), path(), titulo(), tiempo(0), clave(), estado("libre"){}
 };
 
+struct listaPath{
+    string path;
+    int tiempo;
+    string titulo;
+    listaPath* sig;
+    int generacion;
+};
+struct arrayHash2{
+    string dominio;
+    string estado;
+    listaPath* lista;
+    arrayHash2():dominio(), estado("libre"), lista(NULL){}
+
+};
+
 
 class cache{
+    int generacion;
+    arrayHash2* hash2;
     arrayHash* hash;
     int cantidad;
+
     int h1(string clave){
         int h=0;
         for(int i=0;i<clave.length(); i++){
@@ -27,6 +45,7 @@ class cache{
         }
         return h;
     }
+
     int h2(string clave){
         int h=0;
         for(int i=0;i<clave.length();i++){
@@ -34,16 +53,21 @@ class cache{
         }
         return h;
     }
+
     int pos(string clave, int intento){
         int uno=h1(clave);
         int dos=h2(clave);
         return (uno+intento*dos)%10000019; //el siguiente número primo de 10^6 sacado de https://www.walter-fendt.de/html5/mes/primenumbers_es.htm
     }
+
     public:
     cache(){
         hash=new arrayHash[10000019]; //el siguiente número primero de 10^6 sacado de https://www.walter-fendt.de/html5/mes/primenumbers_es.htm
-        cantidad=0;
+        hash2 = new arrayHash2[10000019];
+        cantidad = 0;
+        generacion = 1;
     }
+
     void put(string dominio, string path, string titulo, int tiempo){
         int intento=1;
         string clave = dominio + "|" + path;
@@ -62,8 +86,9 @@ class cache{
         this->hash[posicion].titulo=titulo;
         this->hash[posicion].titulo=tiempo;
         this->hash[posicion].estado="ocupado";
-        cantidad++;
+
     }
+
     void get(string dominio, string path){
         int intento=1;
         string clave = dominio + "|" + path;
@@ -78,6 +103,7 @@ class cache{
         }
         cout << "recurso_no_encontrado" <<endl;
     }
+
     void remove(string dominio, string path){
         int intento=1;
         string clave = dominio + "|" + path;
@@ -92,7 +118,8 @@ class cache{
             posicion=pos(clave, intento);
         }
     }
-    void cointains(string dominio, string path){
+
+    void contains(string dominio, string path){
         int intento=1;
         string clave = dominio + "|" + path;
         int posicion=pos(clave, intento);
@@ -106,9 +133,11 @@ class cache{
         }
         cout << "false" <<endl;
     }
+
     int size(){
         return cantidad;
     }
+
     void clear(){
         
     }
