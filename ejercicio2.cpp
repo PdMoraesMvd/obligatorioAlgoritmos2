@@ -16,7 +16,9 @@ struct arrayHash{
     arrayHash():dominio(), path(), titulo(), tiempo(0), clave(), estado("libre"){}
 };
 
-
+struct arrayHash2{
+    
+};
 class cache{
     arrayHash* hash;
     int cantidad;
