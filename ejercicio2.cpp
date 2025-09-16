@@ -5,17 +5,15 @@
 
 using namespace std;
 
-struct listaPath
-{
+struct listaPath{ //representa un nodo, utilizamos una lista dobelemente enlazada para poder manejar los ordenes pedidos
     string path;
     int tiempo;
     string titulo;
-    listaPath *sig;
-    listaPath *prev;
+    listaPath *sig; //nodo siguiente
+    listaPath *prev; //nodo anterior
 };
 
-struct arrayHash
-{
+struct arrayHash{ //es la tabla de hash principal, que tiene como clave el dominio y el path
     string dominio;
     string path;
     string titulo;
@@ -26,23 +24,23 @@ struct arrayHash
     arrayHash() : dominio(), path(), titulo(), tiempo(0), estado("libre"), nodo(NULL) {}
 };
 
-struct arrayHash2
-{
+struct arrayHash2{ //otra tabla de hash que tiene como clave el dominio
     string dominio;
-    string estado;
-    listaPath *lista;
-    arrayHash2() : dominio(), estado("libre"), lista(NULL) {}
+    string estado; //solo puede tomar "ocupado", "libre", "borrado"
+    listaPath *lista; //lista de paths de ese dominio
+    int cantidad; //numero de recursos del dominio
+    arrayHash2() : dominio(""), estado("libre"), lista(NULL), cantidad(0) {}
 };
 
-class cache
-{
-    int generacion;
+class cache{
+    int capacidad; //tamaño de ambas tablas de hash
     arrayHash2 *hash2;
     arrayHash *hash;
-    int cantidad;
+    int cantidad; //cantidad total de recursos del cache
 
-    int h1(string clave)
-    {
+    //PRE:
+    //POS: devuelve un entero
+    int h1(string clave){ //primera funcion de hash sacada del curso teórico (ver documentacion)
         int h = 0;
         for (int i = 0; i < clave.length(); i++)
         {
@@ -51,25 +49,29 @@ class cache
         return h;
     }
 
-    int h2(string clave)
-    {
+    //PRE:
+    //POS: devuelve un entero
+    int h2(string clave){ //segunda funcion de hash, una adaptacion de la primera, decidimos multiplicarla por un numero cualquiera que elegimos 
         int h = 0;
         for (int i = 0; i < clave.length(); i++)
         {
-            h = h + clave[i] * (i + 1);
+            h = (31 * h + int(clave[i]))*7;
         }
         return h;
     }
 
-    int pos(string clave, int intento)
-    {
-        int uno = h1(clave);
-        int dos = h2(clave);
-        return (uno + intento * dos) % 10000019; // el siguiente número primo de 10^6 sacado de https://www.walter-fendt.de/html5/mes/primenumbers_es.htm
+    //PRE: intento es un número entero positivo
+    //POS: devuelve un índice válido en el rango 0,capacidad-1
+    int pos(string clave, int intento){ //usamos nuestras dos funciones de hash para calcular la posicion
+        unsigned int uno = h1(clave);
+        unsigned int dos = h2(clave);
+        unsigned int indice =  (uno + intento * dos) % capacidad;
+        return indice; 
     }
 
-    void borrar(listaPath *&l)
-    {
+    //PRE:
+    //POS: borra todos los nodos de la lista
+    void borrar(listaPath *&l){
         while (l != NULL)
         {
             listaPath *aBorrar = l;
@@ -78,35 +80,20 @@ class cache
         }
     }
 
-void insertarOrdenado(listaPath*& l, listaPath* nodo){
-    if (l == NULL){
-        l = nodo;
-        nodo->prev = NULL;
-        nodo->sig = NULL;
-        return;
-    }
-    if (nodo->tiempo >= l->tiempo){
+    //PRE: nodo no es vacío (en nuestro caso no lo chequeamos explicitamente cuando llamamos a esta funcion porque ya sabemos de antemano que no es vacia)
+    //POS: nodo se inserta al principio de l
+    void insertarAlPrincipio(listaPath*&l, listaPath*&nodo){
         nodo->sig = l;
         nodo->prev = NULL;
-        l->prev = nodo;
+        if (l != NULL) {
+            l->prev = nodo;
+        }
         l = nodo;
-        return;
     }
 
-    listaPath* cur = l;
-    while (cur->sig != NULL && cur->sig->tiempo > nodo->tiempo){
-        cur = cur->sig;
-    }
-    // insertar DESPUÉS de cur
-    nodo->sig  = cur->sig;
-    nodo->prev = cur;
-    if (cur->sig != NULL) cur->sig->prev = nodo;
-    cur->sig = nodo;
-}
-
-    // Busca el bucket de un dominio en arrayHash2 (devuelve índice o -1 si no existe)
-    int indiceHash2(arrayHash2 *H2, string dominio)
-    {
+    //PRE:
+    //POS: devuelve indice del dominio del hash2 o -1 si no esta
+    int indiceHash2(arrayHash2 *H2, string dominio){
         int intento = 1;
         int posicion = pos(dominio, intento);
         while (H2->estado != "libre")
@@ -121,74 +108,115 @@ void insertarOrdenado(listaPath*& l, listaPath* nodo){
         return -1;
     }
 
-public:
-    cache()
-    {
-        hash = new arrayHash[10000019](); // el siguiente número primero de 10^6 sacado de https://www.walter-fendt.de/html5/mes/primenumbers_es.htm
-        hash2 = new arrayHash2[10000019]();
-        cantidad = 0;
-        generacion = 1;
+    //PRE:
+    //POS: elimina o no nodo de la lista l, liberando memoria
+    void borrarNodo(listaPath*& l, listaPath* nodo){
+    if (nodo == NULL) return; 
+
+    if (nodo->prev != NULL) {
+        nodo->prev->sig = nodo->sig;
+    } else {
+        l = nodo->sig;
     }
 
-    void put(string dominio, string path, string titulo, int tiempo)
-    {
-        // agregar en arrayHash
-        int intento = 1;
+    if (nodo->sig != NULL) {
+        nodo->sig->prev = nodo->prev;
+    }
+
+    delete nodo;
+}
+
+//PRE:  parametro es de hasta 50 caracteres (sin espacios)
+//POS: devuelve false si parametro contiene espacios, true en otro caso
+bool tieneEspacio(string parametro){
+    for(int i=0;i<parametro.length(); i++){
+        if(parametro[i] == ' ') return false;
+    }
+    return true;
+}
+public:
+    //PRE: 1<= capacidad <=1000000
+    //POS: crea un cache correctamente inicializado
+    cache(int capacidad){
+        assert(1<= capacidad <=1000000);
+        this->capacidad=capacidad;
+        hash = new arrayHash[capacidad](); 
+        hash2 = new arrayHash2[capacidad]();
+        cantidad = 0;
+    }
+
+    //PRE: dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios), titulo es de hasta 50 caracteres (sin espacios), 1 <= tiempo <= 10^9
+    //POS: inserta un recurso nuevo o actualiza su título y tiempo si ya esta
+    void put(string dominio, string path, string titulo, int tiempo){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+        assert(path.length() <= 50 && !tieneEspacio(path));
+        assert(titulo.length() <= 50 && !tieneEspacio(titulo));
+        assert(1 <= tiempo <= 1000000000);
         string clave = dominio + "|" + path;
-        int posicion = pos(clave, intento);
-        if (this->hash[posicion].dominio == dominio && this->hash[posicion].path == path)
-        {
-            this->hash[posicion].dominio == dominio;
-            this->hash[posicion].path == path;
+        int intento =1;
+        int posicion=pos(clave, intento);
+
+        while(hash[posicion].estado == "ocupado" && !(hash[posicion].dominio==dominio && hash[posicion].path==path)){
+            intento++;
+            posicion=pos(clave, intento);
+        }
+        if(hash[posicion].estado == "libre" || hash[posicion].estado == "borrado"){//si el estado es libre o borrado, lo cual significa que el bucket esta apto para insercion, lo insertamos
+            hash[posicion].estado = "ocupado";
+            hash[posicion].dominio=dominio;
+            hash[posicion].tiempo=tiempo;
+            hash[posicion].path=path;
+            hash[posicion].titulo=titulo;
+            cantidad++;
+        }else if((hash[posicion].estado == "ocupado" && hash[posicion].dominio==dominio && hash[posicion].path==path)){ //si ya existe actualizo los datos (tiempo, titulo)
+            hash[posicion].tiempo=tiempo;
+            hash[posicion].titulo=titulo;
+            if(hash[posicion].nodo != NULL){ 
+                hash[posicion].nodo->tiempo = tiempo; //con el puntero directo a la lista de paths del hash 2 actualizo sus atributos en O(1)
+                hash[posicion].nodo->titulo = titulo; 
+            }
             return;
         }
-        while (this->hash[posicion].estado == "ocupado")
-        {
-            intento++;
-            posicion = pos(clave, intento);
-        }
-        int index = posicion;
-        this->hash[posicion].dominio = dominio;
-        this->hash[posicion].path = path;
-        this->hash[posicion].titulo = titulo;
-        this->hash[posicion].tiempo = tiempo;
-        this->hash[posicion].estado = "ocupado";
-        this->hash[posicion].nodo = NULL;
 
-        // agregar en arrayHash2 (ya sabemos que se agrego en la primera)
-        intento = 1;
-        int posicion = pos(dominio, intento);
-        while (this->hash2[posicion].estado == "ocupado" && this->hash2[posicion].dominio != dominio)
-        {
+        clave = dominio; //ahora la clave va a ser el dominio porque vamos a trabajar exclusivamente con el hash2
+        intento=1;
+        int posicion2 = pos(clave,intento);
+        while(hash2[posicion2].estado == "ocupado" && hash2[posicion2].dominio!=dominio && intento < capacidad){
             intento++;
-            posicion = pos(dominio, intento);
+            posicion2=pos(clave, intento);
         }
-        listaPath *nodo = new listaPath;
-        nodo->sig = NULL;
+
+        listaPath* nodo = new listaPath;
         nodo->path = path;
-        nodo->tiempo = tiempo;
-        nodo->titulo = titulo;
-        // caso dominio nuevo
-        if (this->hash2[posicion].estado == "libre" || this->hash2[posicion].estado == "borrado")
-        {
-            this->hash2[posicion].estado = "ocupado";
-            this->hash2[posicion].dominio = dominio;
-            insertarOrdenado(this->hash2[posicion].lista, nodo);
+        nodo->prev=NULL;
+        nodo->sig=NULL;
+        nodo->tiempo=tiempo;
+        nodo->titulo=titulo;
+
+        if(hash2[posicion2].estado == "libre" || hash2[posicion2].estado == "borrado"){//si el estado es libre o borrado, lo cual significa que el bucket esta apto para insercion, lo insertamos
+            hash2[posicion2].dominio=dominio;
+            insertarAlPrincipio(hash2[posicion2].lista, nodo);
+            hash[posicion].nodo=nodo;
+            hash2[posicion2].estado="ocupado";
+            hash2[posicion2].cantidad++;
+            return;
         }
-        // caso dominio ya existente
-        else
-        {
-            insertarOrdenado(this->hash2[posicion].lista, nodo);
+
+        if(hash2[posicion2].estado == "ocupado"){//si ya existe el dominio agrego el nodo a la lista
+            insertarAlPrincipio(hash2[posicion2].lista, nodo);
+            hash[posicion].nodo=nodo;
+            hash2[posicion2].cantidad++;
         }
-        cantidad++;
     }
 
-    void get(string dominio, string path)
-    {
+    //PRE:dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios)
+    //POS: imprime {titulo} {tiempo} si el recurso existe, o "recurso_no_encontrado" si no existe
+    void get(string dominio, string path){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+        assert(path.length() <= 50 && !tieneEspacio(path));
         int intento = 1;
         string clave = dominio + "|" + path;
         int posicion = pos(clave, intento);
-        while (this->hash[posicion].estado == "ocupado" || this->hash[posicion].estado == "borrado")
+        while (this->hash[posicion].estado == "ocupado" || this->hash[posicion].estado == "borrado")//busca mientras la celde este ocupada o borrada
         {
             if (this->hash[posicion].estado == "ocupado" && this->hash[posicion].dominio == dominio && this->hash[posicion].path == path)
             {
@@ -201,53 +229,46 @@ public:
         cout << "recurso_no_encontrado" << endl;
     }
 
-    void remove(string dominio, string path)
-    {
-        int intento = 1;
-        string clave = dominio + "|" + path;
-        int posicion = pos(clave, intento);
-        // remove del arrayHash
-        while ((hash[posicion].estado == "ocupado" || hash[posicion].estado == "borrado") && (hash[posicion].dominio != dominio || hash[posicion].path != path))
-        {
+    //PRE:dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios)
+    //POS: si existe el recurso, lo elimina, si no, no hace nada
+    void remove(string dominio, string path){
+      assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+      assert(path.length() <= 50 && !tieneEspacio(path));
+      int intento=1;
+      string clave = dominio + "|" + path;
+      int posicion = pos(clave, intento);
+      while(hash[posicion].estado == "ocupado" && hash[posicion].dominio!=dominio && hash[posicion].path!=path){
+        intento++;
+        posicion=pos(clave,intento);
+      }
+      if(hash[posicion].estado == "libre" || hash[posicion].estado == "borrado") return; //no esta
+      if(hash[posicion].estado == "ocupado" && hash[posicion].dominio==dominio && hash[posicion].path==path){
+        listaPath* aBorrar = hash[posicion].nodo;
+        intento=1;
+        int posicion2=pos(dominio, intento);
+        while (hash2[posicion2].estado != "libre" &&(hash2[posicion2].estado != "ocupado" || hash2[posicion2].dominio != dominio)){
             intento++;
-            posicion = pos(clave, intento);
+            posicion2 = pos(dominio, intento);
         }
-        if (hash[posicion].estado == "libre")
-            return; // no existe ese elemento
-        if (hash[posicion].estado == "ocupado" && hash[posicion].dominio == dominio && hash[posicion].path == path)
-        {
-            if (hash[posicion].nodo != NULL)
-            {
-                int indice = indiceHash2(hash2, dominio);
-                listaPath *aBorrar = hash[posicion].nodo;
-                if (indice != -1 && hash2[indice].lista == aBorrar)
-                {
-                    hash2[indice].lista = aBorrar->sig;
-                }
-                if (aBorrar->prev != NULL)
-                {
-                    aBorrar->prev->sig = aBorrar->sig;
-                }
-                if (aBorrar->sig != NULL)
-                {
-                    aBorrar->sig->prev = aBorrar->prev;
-                }
-                delete aBorrar;
-                hash[posicion].nodo = NULL;
-            }
-            hash[posicion].estado = "borrado";
+        if (hash2[posicion2].estado == "ocupado" && hash2[posicion2].dominio == dominio) {
+            borrarNodo(hash2[posicion2].lista, aBorrar);
+            hash2[posicion2].cantidad--;
         }
+        hash[posicion].estado="borrado";
+        cantidad--;
+      }
     }
 
-    void contains(string dominio, string path)
-    {
+    //PRE:dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios)
+    //POS: imprime "true" si existe, "false" E.O.C (en otro caso)
+    void contains(string dominio, string path){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+        assert(path.length() <= 50 && !tieneEspacio(path));
         int intento = 1;
         string clave = dominio + "|" + path;
         int posicion = pos(clave, intento);
-        while (this->hash[posicion].estado == "ocupado" || this->hash[posicion].estado == "borrado")
-        {
-            if (this->hash[posicion].estado == "ocupado" && this->hash[posicion].dominio == dominio && this->hash[posicion].path == path)
-            {
+        while (this->hash[posicion].estado == "ocupado" || this->hash[posicion].estado == "borrado"){
+            if (this->hash[posicion].estado == "ocupado" && this->hash[posicion].dominio == dominio && this->hash[posicion].path == path){
                 cout << "true" << endl;
                 return;
             }
@@ -257,23 +278,162 @@ public:
         cout << "false" << endl;
     }
 
-    void list_domain(string dominio)
-    {
+    //PRE:dominio es de hasta 50 caracteres (sin espacios)
+    //POS: imprime todos los recursos del dominio o vacio si no hay ni 1
+    void list_domain(string dominio){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
         int intento = 1;
+        string clave = dominio;
+        int posicion = pos(clave, intento);
+
+        while ((hash2[posicion].estado == "ocupado" || hash2[posicion].estado == "borrado") && hash2[posicion].dominio != dominio && intento < capacidad) {
+            intento++;
+            posicion = pos(clave, intento);
+        }
+
+        if (intento == capacidad || hash2[posicion].estado != "ocupado" || hash2[posicion].dominio != dominio){
+            cout << endl;
+            return;
+        }
+
+        listaPath* aux = hash2[posicion].lista;
+        if (aux == NULL){
+            cout << endl;
+            return;
+        }
+
+        while (aux != NULL){
+            cout << aux->path;
+            aux = aux->sig;
+            if (aux != NULL) cout << " ";
+        }
+        cout << endl;
+        
     }
 
-    int size()
-    {
-        return cantidad;
+    //PRE:
+    //POS: imprime la cantidad total de recursos del cache
+    int size(){
+        cout << cantidad << endl;
     }
 
-    void clear()
-    {
+    //PRE:
+    //POS: elimina todos los recursos del dominio y "resetea" todos los atributos correspondientes
+    void clear(){
+        for(int i=0; i<capacidad ; i++){
+            hash[i].nodo = NULL;
+            hash[i].estado = "libre";
+            hash2[i].estado = "libre";
+            while(hash2[i].lista!=NULL){
+                listaPath* aBorrar = hash2[i].lista;
+                hash2[i].lista = hash2[i].lista->sig;
+                delete aBorrar;
+            }
+            hash2[i].cantidad=0;
+        }
+        cantidad=0;
+    }
+
+    //PRE:dominio es de hasta 50 caracteres (sin espacios)
+    //POS: imprime la cantidad de recursos de un dominio especifico
+    void count_domain(string dominio){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+        int intento = 1;
+        string clave=dominio;
+        int posicion = pos(clave, intento);
+        while( (hash2[posicion].estado == "ocupado" || hash2[posicion].estado == "borrado") && hash2[posicion].dominio != dominio){
+            intento++;
+            posicion= pos(clave, intento);
+        }
+        if(hash2[posicion].estado=="ocupado" && hash2[posicion].dominio == dominio){
+            cout << hash2[posicion].cantidad << endl;
+        }else{
+            cout << "0" << endl;
+        }
+    }
+
+    //PRE:dominio es de hasta 50 caracteres (sin espacios)
+    //POS: elimina todos los recursos de dominio o nada si no existe o no tiene
+    void clear_domain(string dominio){
+        assert(dominio.length() <= 50 && !tieneEspacio(dominio));
+        int intento = 1;
+        string clave=dominio;
+        int posicion = pos(clave, intento);
+        while( (hash2[posicion].estado == "ocupado" || hash2[posicion].estado == "borrado") && hash2[posicion].dominio != dominio && intento < capacidad){
+            intento++;
+            posicion= pos(clave, intento);
+        }
+        if (intento == capacidad || hash2[posicion].estado != "ocupado" || hash2[posicion].dominio != dominio){
+            return; 
+        }
+        if(hash2[posicion].estado=="ocupado" && hash2[posicion].dominio == dominio){
+            while(hash2[posicion].lista != NULL){
+                listaPath* aBorrar = hash2[posicion].lista;
+                string clave2 = dominio + "|" + aBorrar->path;
+                int intento2 = 1;
+                int posicion2 = pos(clave2, intento2);
+                while( (hash[posicion2].estado == "ocupado" || hash[posicion2].estado == "borrado") && hash[posicion2].dominio!=dominio){
+                    intento2++;
+                    posicion2 = pos(clave2,intento2);
+                }
+                hash[posicion2].estado = "borrado";
+                hash[posicion2].nodo = NULL;
+                hash2[posicion].lista = hash2[posicion].lista->sig;
+                delete aBorrar;
+                cantidad--;
+                hash2[posicion].cantidad--;
+                
+            }
+            hash2[posicion].estado="borrado";
+        }
     }
 };
 
-int main()
-{
-    // TODO
-    return 0;
+int main(){
+    int n;
+    cin >> n;
+    cache* cachee = new cache(n*2);
+    for(int i=0;i<n;i++){
+        string dominio;
+        string path;
+        string titulo;
+        int tiempo;
+        string operacion;
+        cin >> operacion;
+        if(operacion == "put" || operacion == "PUT"){
+            cin >> dominio;
+            cin >> path;
+            cin >> titulo;
+            cin >> tiempo;
+            cachee->put(dominio, path, titulo, tiempo);
+        }else if(operacion == "get" || operacion == "GET"){
+            cin >> dominio;
+            cin >> path;
+            cachee->get(dominio, path);
+        }else if(operacion == "remove" || operacion == "REMOVE"){
+            cin >> dominio;
+            cin >> path;
+            cachee->remove(dominio, path);
+        }else if(operacion == "contains" || operacion == "CONTAINS"){
+            cin >> dominio;
+            cin >> path;
+            cachee->contains(dominio,path);
+        }else if(operacion == "count_domain" || operacion == "COUNT_DOMAIN"){
+            cin >> dominio;
+            cachee->count_domain(dominio);
+        }else if(operacion == "list_domain" || operacion == "LIST_DOMAIN"){
+            cin >> dominio;
+            cachee->list_domain(dominio);
+        }else if(operacion == "clear_domain" || operacion == "CLEAR_DOMAIN"){
+            cin >> dominio;
+            cachee->clear_domain(dominio);
+        }else if(operacion == "size" || operacion == "SIZE"){
+            cachee->size();            
+        }else if(operacion == "clear" || operacion == "CLEAR"){
+            cachee->clear();
+        }else{
+            cout << "no ingresaste bien la operacion, perdiste un intento" << endl; 
+        }
+    }
+    delete cachee;
 }

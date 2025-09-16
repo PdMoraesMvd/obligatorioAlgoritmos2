@@ -209,8 +209,9 @@ int main()
             cin >> puntaje;
             arbol->rank(puntaje);
         }else{
-            cout << "no ingresaste bien la operacion, perdiste un intento"; 
+            cout << "no ingresaste bien la operacion, perdiste un intento" << endl; 
         }
     }
+    delete arbol;
     
 }
