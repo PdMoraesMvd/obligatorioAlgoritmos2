@@ -40,7 +40,7 @@ class cache{
 
     //PRE:
     //POS: devuelve un entero
-    int h1(string clave){ //primera funcion de hash sacada del curso teórico (ver documentacion)
+    int h1(string clave){ //primera funcion de hash. Sacada del curso teórico (ver documentacion)
         int h = 0;
         for (int i = 0; i < clave.length(); i++)
         {
@@ -127,13 +127,14 @@ class cache{
 }
 
 //PRE:  parametro es de hasta 50 caracteres (sin espacios)
-//POS: devuelve false si parametro contiene espacios, true en otro caso
+//POS: devuelve true si parametro contiene espacios, false en otro caso
 bool tieneEspacio(string parametro){
     for(int i=0;i<parametro.length(); i++){
-        if(parametro[i] == ' ') return false;
+        if(parametro[i] == ' ') return true;
     }
-    return true;
+    return false;
 }
+
 public:
     //PRE: 1<= capacidad <=1000000
     //POS: crea un cache correctamente inicializado
@@ -151,7 +152,8 @@ public:
         assert(dominio.length() <= 50 && !tieneEspacio(dominio));
         assert(path.length() <= 50 && !tieneEspacio(path));
         assert(titulo.length() <= 50 && !tieneEspacio(titulo));
-        assert(1 <= tiempo <= 1000000000);
+        assert(1 <= tiempo && tiempo <= 1000000000);
+
         string clave = dominio + "|" + path;
         int intento =1;
         int posicion=pos(clave, intento);
@@ -160,24 +162,46 @@ public:
             intento++;
             posicion=pos(clave, intento);
         }
-        if(hash[posicion].estado == "libre" || hash[posicion].estado == "borrado"){//si el estado es libre o borrado, lo cual significa que el bucket esta apto para insercion, lo insertamos
+        if(hash[posicion].estado == "ocupado" && hash[posicion].dominio==dominio && hash[posicion].path==path){ 
+            hash[posicion].tiempo=tiempo;
+            hash[posicion].titulo=titulo;
+            if(hash[posicion].nodo != NULL){ 
+                listaPath* lp = hash[posicion].nodo;
+                lp->tiempo = tiempo;
+                lp->titulo = titulo;
+
+                //mover al frente de la lista si no esta, busco dominio en el segundo hash
+                int intento2 = 1;
+                int posicion2 = pos(dominio, intento2);
+                while((hash2[posicion2].estado == "ocupado" || hash2[posicion2].estado == "borrado") &&
+                    hash2[posicion2].dominio != dominio && intento2 < capacidad){
+                    intento2++;
+                    posicion2 = pos(dominio, intento2);
+                }
+                if(hash2[posicion2].estado == "ocupado" && hash2[posicion2].dominio == dominio){
+                    if(lp != hash2[posicion2].lista){
+                        if(lp->prev) lp->prev->sig = lp->sig;
+                        if(lp->sig)  lp->sig->prev = lp->prev;
+                        lp->sig = hash2[posicion2].lista;
+                        if(hash2[posicion2].lista) hash2[posicion2].lista->prev = lp;
+                        lp->prev = NULL;
+                        hash2[posicion2].lista = lp;
+                    }
+                }
+            }
+            return;
+        }
+
+        if(hash[posicion].estado == "libre" || hash[posicion].estado == "borrado"){
             hash[posicion].estado = "ocupado";
             hash[posicion].dominio=dominio;
             hash[posicion].tiempo=tiempo;
             hash[posicion].path=path;
             hash[posicion].titulo=titulo;
             cantidad++;
-        }else if((hash[posicion].estado == "ocupado" && hash[posicion].dominio==dominio && hash[posicion].path==path)){ //si ya existe actualizo los datos (tiempo, titulo)
-            hash[posicion].tiempo=tiempo;
-            hash[posicion].titulo=titulo;
-            if(hash[posicion].nodo != NULL){ 
-                hash[posicion].nodo->tiempo = tiempo; //con el puntero directo a la lista de paths del hash 2 actualizo sus atributos en O(1)
-                hash[posicion].nodo->titulo = titulo; 
-            }
-            return;
         }
 
-        clave = dominio; //ahora la clave va a ser el dominio porque vamos a trabajar exclusivamente con el hash2
+        clave = dominio;
         intento=1;
         int posicion2 = pos(clave,intento);
         while(hash2[posicion2].estado == "ocupado" && hash2[posicion2].dominio!=dominio && intento < capacidad){
@@ -192,7 +216,7 @@ public:
         nodo->tiempo=tiempo;
         nodo->titulo=titulo;
 
-        if(hash2[posicion2].estado == "libre" || hash2[posicion2].estado == "borrado"){//si el estado es libre o borrado, lo cual significa que el bucket esta apto para insercion, lo insertamos
+        if(hash2[posicion2].estado == "libre" || hash2[posicion2].estado == "borrado"){
             hash2[posicion2].dominio=dominio;
             insertarAlPrincipio(hash2[posicion2].lista, nodo);
             hash[posicion].nodo=nodo;
@@ -201,13 +225,12 @@ public:
             return;
         }
 
-        if(hash2[posicion2].estado == "ocupado"){//si ya existe el dominio agrego el nodo a la lista
+        if(hash2[posicion2].estado == "ocupado"){
             insertarAlPrincipio(hash2[posicion2].lista, nodo);
             hash[posicion].nodo=nodo;
             hash2[posicion2].cantidad++;
         }
     }
-
     //PRE:dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios)
     //POS: imprime {titulo} {tiempo} si el recurso existe, o "recurso_no_encontrado" si no existe
     void get(string dominio, string path){
@@ -220,7 +243,7 @@ public:
         {
             if (this->hash[posicion].estado == "ocupado" && this->hash[posicion].dominio == dominio && this->hash[posicion].path == path)
             {
-                cout << "{" << this->hash[posicion].titulo << "}" << " " << "{" << this->hash[posicion].tiempo << "}" << endl;
+                cout << this->hash[posicion].titulo << " "  << this->hash[posicion].tiempo << endl;
                 return;
             }
             intento++;
@@ -228,7 +251,6 @@ public:
         }
         cout << "recurso_no_encontrado" << endl;
     }
-
     //PRE:dominio es de hasta 50 caracteres (sin espacios), path es de hasta 50 caracteres (sin espacios)
     //POS: si existe el recurso, lo elimina, si no, no hace nada
     void remove(string dominio, string path){
@@ -387,6 +409,23 @@ public:
             hash2[posicion].estado="borrado";
         }
     }
+    //PRE:
+    //POS: libera toda la memoria del cache
+    void destruir(){
+        for(int i=0; i<capacidad;i++){
+            listaPath* aux = hash2[i].lista;
+            while(aux!=NULL){
+                listaPath* aBorrar = aux;
+                aux=aux->sig;
+                delete aBorrar;
+                hash2[i].lista = NULL;
+            }
+        }
+        delete[] hash;
+        delete[] hash2;
+        cantidad=0;
+        capacidad=0;
+    }
 };
 
 int main(){
@@ -435,5 +474,6 @@ int main(){
             cout << "no ingresaste bien la operacion, perdiste un intento" << endl; 
         }
     }
+    cachee->destruir();
     delete cachee;
 }
