@@ -33,7 +33,7 @@ class Avl{
     bool* estaId;
 
     //PRE:
-    //POS: devuelve la altuta del nodo, o 0 si no hay nodo
+    //POS: devuelve la altura del nodo, o 0 si no hay nodo
     template <class T>
     int alturaSegura(T* nodo) {
         if(nodo == NULL) return 0;
