@@ -2,8 +2,9 @@
 #include <string>
 #include <iostream>
 #include <limits>
-#include <List.h>
-#include <ListImp.cpp>
+#include "./tads/List.h"
+#include "./tads/ListImp.cpp"
+using namespace std;
 
 class MFSet
 {
@@ -13,6 +14,8 @@ private:
     int tamano;
 
 public:
+    //PRE:
+    //POS: Crea un MFSET donde cada elemento es su propio representante
     MFSet(int x)
     {
         this->padre = new int[x + 1];
@@ -23,28 +26,28 @@ public:
             this->padre[i] = i;
         }
     }
-
-    int find(int x)
+    //PRE:
+    //POS: Devuelve el representante dle conjunto que contiene a x, aplicando path compression
+    int find(int x)//busca el representante del conjunto de x
     {
-        if (this->padre[x] == x)
-            return x;
-        //path compression
+        if (this->padre[x] == x) return x;
         this->padre[x] = find(this->padre[x]);
         return this->padre[x];
     }
-
-    void merge(int x, int y)
+    //PRE:
+    //POS: Une los conjuntos que incliyen x e y, aplicnado union by rank. Si ya pertenecer al mismo conjunto no hace nada
+    void merge(int x, int y)//une los conjuntos que incluyen a x e y
     {
         int padreX = find(x);
         int padreY = find(y);
         if (padreX == padreY)
             return;
-        // evaluar alturas (union by rank)
-        if (this->altura[padreX] < this->altura[padreY])
+        //evaluar alturas (union by rank)
+        if (this->altura[padreY] < this->altura[padreX])
         {
             this->padre[padreY] = padreX;
         }
-        else if (this->altura[padreX] > this->altura[padreY])
+        else if (this->altura[padreY] > this->altura[padreX])
         {
             this->padre[padreX] = padreY;
         }
@@ -56,11 +59,14 @@ public:
     }
 };
 
-using namespace std;
+
 struct Arista{
     int origen;
     int peso;
     int destino;
+    bool operator==(Arista a){ //nuestra forma para comparar la igualdad entre dos aristas
+        return (origen==a.origen && destino == a.destino && a.peso == peso);
+    }
 };
 
 class Grafo {
@@ -68,26 +74,32 @@ class Grafo {
     ListImp<Arista>* aristas;
     int cantAristas;
 public:
+    //PRE:
+    //POS: Crea un grafo
     Grafo(int _vertices) {
         vertices = _vertices;
         aristas = new ListImp<Arista>;
         cantAristas = 0;
     }
-
+    //PRE: 
+    //POS: Devuelve la cantidad de vertices del grafo
     int getCantVertices(){
         return this->vertices;
     }
-
+    //PRE:
+    //POS: devuelve la cantidad de aristas del grafo
     int getCantAristas(){
         return this->cantAristas;
     }
-
+    //PRE:
+    //POS: Devuelve el puntero a la lista de aristas del grafo
     ListImp<Arista>* getAristas(){
         return this->aristas;
     }
-
-    void añadirArista(int _peso, int _origen, int _destino){
-        Arista nuevo {_peso, _origen, _destino};
+    //PRE:
+    //POS: Agrega una nueva arista al grafo con los valores dados e incrementa la cantidad de aristas
+    void anadirArista(int _peso, int _origen, int _destino){
+        Arista nuevo {_origen, _peso, _destino};
         aristas->insert(nuevo);
         cantAristas++;
     }
@@ -99,17 +111,20 @@ class MinHeap
     int proxLibre;
     int capacidad;
     int cantElementosTotales;
-
+    //PRE:
+    //POS: Devuelve true ssi el peso de a1 es menor estricto al de a2
     bool esMenor(Arista a1, Arista a2){
         return a1.peso < a2.peso;
     }
-
+    //PRE: 
+    //POS: Intercambia los elementos array[pos1] y array[pos2]
     void swap(int pos1, int pos2){
-        Arista aux=array[pos1];
-        array[pos1]=array[pos2];
-        array[pos2]=aux;
+        Arista aux=array[pos2];
+        array[pos2]=array[pos1];
+        array[pos1]=aux;
     }
-
+    //PRE:
+    //POS: Ajusta el elemento en pos hacia abajo (LO HUNDE ) hasta que se cumpla la propiedad de orden del heap
     void hundir(int pos){
         int posHijoIzq = pos*2;
         int posHijoDer = (pos*2)+1;
@@ -124,7 +139,8 @@ class MinHeap
             }
         }
     }
-    
+    //PRE:
+    //POS: Ajusta el elemento en pos hacia arriba (lo fLota) hasta que se cumpla la propiedad de orden del heap
     void flotar(int pos){
         if(pos > 1){
             int posPadre = pos/2;
@@ -136,50 +152,57 @@ class MinHeap
     }
     
     public:
+    //PRE:
+    //POS: Crea un heap
         MinHeap(int _capacidad){
             array = new Arista[_capacidad + 1];
             proxLibre=1;
             capacidad=_capacidad;
         }
+        //PRE:
+        //POS: Devuelve true ssi el heap esta lleno
         bool estaLleno(){
         return proxLibre > capacidad;
         }
+        //PRE:
+        //POS: Devuelve true ssi el heap esta vacio
         bool esVacio(){
             return proxLibre == 1;
         }
+        //PRE: !estaLleno()
+        //POS: Inserta el elemento mantendiendo la propiedad de orden del heap
         void agregar(Arista elemento){
             assert(!estaLleno());
             array[proxLibre] = elemento;
             flotar(proxLibre);
             proxLibre++;
         }
-        void eliminarTope(){
+        //PRE:
+        //POS: Elimina y retorna la arista con menos peso manteniendo la propiedad del minheap
+        Arista eliminarTope(){
             assert(!esVacio());
+            Arista ret=array[1];
             array[1]=array[--proxLibre];
             hundir(1);
-        }
-        Arista top(){
-            assert(!esVacio());
-            return array[1];
         }
         void destruir(){
             delete[] array;
         }
 };
-
+//PRE:
+//POS: Devuelve el peso del arbol o bosque de cubrimiento minimo del grafo g
 int kruskal(Grafo* g){
-    int ret = 0;
+    int ret = 0; //el peso total del MST que se va a devolver
     int aristasAgregadas = 0;
     MFSet* conj = new MFSet(g->getCantVertices());
     MinHeap* heap = new MinHeap(g->getCantAristas());
-    ListImp<Arista>* aristas = g->getAristas();
-    for(int i=0; i<g->getCantAristas(); i++){
+    ListImp<Arista>* aristas = g->getAristas(); //lista de aristas
+    for(int i=0; i<g->getCantAristas(); i++){ //inserta todas las aristas en el minheap
         Arista a = aristas->get(i);
         heap->agregar(a);
     }
-    while(!heap->esVacio() || aristasAgregadas == g->getCantVertices() - 1){
-        Arista a = heap->top();
-        heap->eliminarTope();
+    while(!heap->esVacio() && aristasAgregadas < g->getCantVertices() - 1){ //se itera hasta formas el MST o cuando el minheap este vacio
+        Arista a = heap->eliminarTope();
         int padreOrigen = conj->find(a.origen);
         int padreDestino = conj->find(a.destino);
         if(padreOrigen != padreDestino){ //si no forman ciclo
@@ -188,15 +211,31 @@ int kruskal(Grafo* g){
             aristasAgregadas++;
         }
     }
-
-    //ir sacando la arista de menor peso y evaluar padres de ambos con MFSeta hecho
-    //Si es el mismo padre entonces no agrego arista hecho
-    //Si no tienen mismo padre agrego al mfset y agrego arista al grafo.
-    return NULL;
+    return ret;
 }
 
-int main()
-{
-    // TODO
+int main(){
+    int V;
+    int E;
+    cin >> V;
+    cin >> E;
+    assert( V >= 1);
+    assert(V <= 100000);
+    assert(E>=0);
+    assert(E<=100000);
+    Grafo* grafo = new Grafo(V); 
+    for(int i=0; i<E; i++){
+        int origen; //u
+        int destino; //v
+        int peso; //w
+        cin >> origen; 
+        assert(origen>=0);
+        cin >> destino; 
+        assert(destino<V);
+        cin >> peso; 
+        assert(peso<100000);
+        grafo->anadirArista(peso, origen, destino);
+    }
+    cout<< kruskal(grafo) << endl;
     return 0;
 }
