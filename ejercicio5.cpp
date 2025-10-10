@@ -58,36 +58,54 @@ public:
 
 using namespace std;
 struct Arista{
+    int origen;
     int peso;
     int destino;
 };
 
 class Grafo {
     int vertices;
-    List<Arista>** adyacentes;
+    ListImp<Arista>* aristas;
+    int cantAristas;
 public:
-    Grafo(int _vertices) : vertices(_vertices) {
-        adyacentes = new List<Arista>*[vertices+1];
-        for (int i = 1; i < vertices+1; i++) {
-            adyacentes[i] = new ListImp<Arista>();
-        }
+    Grafo(int _vertices) {
+        vertices = _vertices;
+        aristas = new ListImp<Arista>;
+        cantAristas = 0;
     }
-    void añadirArista(int _peso, int origen, int _destino){
-        Arista nuevo {_peso, _destino};
-        adyacentes[origen]->insert(nuevo);
+
+    int getCantVertices(){
+        return this->vertices;
+    }
+
+    int getCantAristas(){
+        return this->cantAristas;
+    }
+
+    ListImp<Arista>* getAristas(){
+        return this->aristas;
+    }
+
+    void añadirArista(int _peso, int _origen, int _destino){
+        Arista nuevo {_peso, _origen, _destino};
+        aristas->insert(nuevo);
+        cantAristas++;
     }
 };
 
 class MinHeap
 { 
-
-    int* array;
+    Arista* array;
     int proxLibre;
     int capacidad;
     int cantElementosTotales;
 
+    bool esMenor(Arista a1, Arista a2){
+        return a1.peso < a2.peso;
+    }
+
     void swap(int pos1, int pos2){
-        int aux=array[pos1];
+        Arista aux=array[pos1];
         array[pos1]=array[pos2];
         array[pos2]=aux;
     }
@@ -97,10 +115,10 @@ class MinHeap
         int posHijoDer = (pos*2)+1;
         if(posHijoIzq < proxLibre){
             int posHijoMenor = posHijoIzq;
-            if(posHijoDer < proxLibre && array[posHijoDer] < array[posHijoIzq]){
+            if(posHijoDer < proxLibre && esMenor(array[posHijoDer], array[posHijoIzq])){
                 posHijoMenor=posHijoDer;
             }
-            if(array[posHijoMenor] < array[pos]){
+            if(esMenor(array[posHijoMenor], array[pos])){
                 swap(posHijoMenor, pos);
                 hundir(posHijoMenor);
             }
@@ -110,7 +128,7 @@ class MinHeap
     void flotar(int pos){
         if(pos > 1){
             int posPadre = pos/2;
-            if(array[pos]<array[posPadre]){
+            if(esMenor(array[pos],array[posPadre])){
                 swap(pos, posPadre);
                 flotar(posPadre);
             }
@@ -119,7 +137,7 @@ class MinHeap
     
     public:
         MinHeap(int _capacidad){
-            array =new int[_capacidad + 1];
+            array = new Arista[_capacidad + 1];
             proxLibre=1;
             capacidad=_capacidad;
         }
@@ -129,7 +147,7 @@ class MinHeap
         bool esVacio(){
             return proxLibre == 1;
         }
-        void agregar(int elemento){
+        void agregar(Arista elemento){
             assert(!estaLleno());
             array[proxLibre] = elemento;
             flotar(proxLibre);
@@ -140,7 +158,7 @@ class MinHeap
             array[1]=array[--proxLibre];
             hundir(1);
         }
-        int top(){
+        Arista top(){
             assert(!esVacio());
             return array[1];
         }
@@ -149,8 +167,31 @@ class MinHeap
         }
 };
 
-Grafo kruskal(Grafo g){
-    //TODO
+int kruskal(Grafo* g){
+    int ret = 0;
+    int aristasAgregadas = 0;
+    MFSet* conj = new MFSet(g->getCantVertices());
+    MinHeap* heap = new MinHeap(g->getCantAristas());
+    ListImp<Arista>* aristas = g->getAristas();
+    for(int i=0; i<g->getCantAristas(); i++){
+        Arista a = aristas->get(i);
+        heap->agregar(a);
+    }
+    while(!heap->esVacio() || aristasAgregadas == g->getCantVertices() - 1){
+        Arista a = heap->top();
+        heap->eliminarTope();
+        int padreOrigen = conj->find(a.origen);
+        int padreDestino = conj->find(a.destino);
+        if(padreOrigen != padreDestino){ //si no forman ciclo
+            conj->merge(padreOrigen, padreDestino);
+            ret += a.peso;
+            aristasAgregadas++;
+        }
+    }
+
+    //ir sacando la arista de menor peso y evaluar padres de ambos con MFSeta hecho
+    //Si es el mismo padre entonces no agrego arista hecho
+    //Si no tienen mismo padre agrego al mfset y agrego arista al grafo.
     return NULL;
 }
 
