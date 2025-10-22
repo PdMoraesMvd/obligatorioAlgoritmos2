@@ -201,7 +201,7 @@ int kruskal(Grafo* g){
         Arista a = aristas->get(i);
         heap->agregar(a);
     }
-    while(!heap->esVacio() && aristasAgregadas < g->getCantVertices() - 1){ //se itera hasta formas el MST o cuando el minheap este vacio
+    while(!heap->esVacio() && aristasAgregadas < g->getCantVertices() - 1){ //se itera hasta formar el MST o cuando el minheap este vacio
         Arista a = heap->eliminarTope();
         int padreOrigen = conj->find(a.origen);
         int padreDestino = conj->find(a.destino);

@@ -139,7 +139,7 @@ public:
     //PRE: 1<= capacidad <=1000000
     //POS: crea un cache correctamente inicializado
     cache(int capacidad){
-        assert(1<= capacidad <=1000000);
+        assert((1<= capacidad) && (capacidad <=1000000));
         this->capacidad=capacidad;
         hash = new arrayHash[capacidad](); 
         hash2 = new arrayHash2[capacidad]();
@@ -165,7 +165,7 @@ public:
         if(hash[posicion].estado == "ocupado" && hash[posicion].dominio==dominio && hash[posicion].path==path){ 
             hash[posicion].tiempo=tiempo;
             hash[posicion].titulo=titulo;
-            if(hash[posicion].nodo != NULL){ 
+            if(hash[posicion].nodo != NULL){ //debería de ser siempre true
                 listaPath* lp = hash[posicion].nodo;
                 lp->tiempo = tiempo;
                 lp->titulo = titulo;
@@ -180,10 +180,10 @@ public:
                 }
                 if(hash2[posicion2].estado == "ocupado" && hash2[posicion2].dominio == dominio){
                     if(lp != hash2[posicion2].lista){
-                        if(lp->prev) lp->prev->sig = lp->sig;
-                        if(lp->sig)  lp->sig->prev = lp->prev;
+                        if(lp->prev!=NULL && lp->prev) lp->prev->sig = lp->sig;
+                        if(lp!=NULL && lp->sig)  lp->sig->prev = lp->prev;
                         lp->sig = hash2[posicion2].lista;
-                        if(hash2[posicion2].lista) hash2[posicion2].lista->prev = lp;
+                        if(hash2[posicion2].lista!=NULL && hash2[posicion2].lista) hash2[posicion2].lista->prev = lp;
                         lp->prev = NULL;
                         hash2[posicion2].lista = lp;
                     }

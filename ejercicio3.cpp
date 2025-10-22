@@ -101,7 +101,7 @@ class cache{
     //PRE: 1<= capacidad <=1000000
     //POS: crea un cache correctamente inicializado
     cache(int capacidad){
-        assert(1<= capacidad <=1000000);
+        assert((1<= capacidad) && (capacidad <=1000000));
         this->capacidad=capacidad;
         hash = new nodoHash *[capacidad]; 
         hash2 = new nodoHash2*[capacidad];
@@ -225,14 +225,25 @@ class cache{
         string clave=dominio;
         int posicion = pos(clave);
         nodoHash2* aux = hash2[posicion];
-
-        while(aux!=NULL && aux->dominio != dominio) aux=aux->sig;
+        nodoHash2* anterior=NULL;
+        while(aux!=NULL && aux->dominio != dominio){
+            anterior=aux;
+            aux=aux->sig;
+        } 
         if(aux != NULL){
             listaPath* aux2 = aux->lista;
             while(aux2 != NULL && aux2 ->path!=path) aux2 = aux2 ->sig;
             if(aux2 != NULL){
                 borrarNodo(aux->lista, aux2);
                 aux->cantidad--;
+                if(aux->cantidad==0){
+                    if(anterior==NULL){
+                        hash2[posicion]=hash2[posicion]->sig;
+                    }else{
+                        anterior->sig=aux->sig;
+                    }
+                    delete aux;
+                }
                 cantidad--;
                 string clave2 = dominio + "|" + path;
                 posicion=pos(clave2);

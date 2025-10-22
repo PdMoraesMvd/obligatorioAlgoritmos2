@@ -30,7 +30,6 @@ class Avl{
     int cantidadTotal;
     NodoAvl* topUno;
     NodoAvl2* raizPuntaje;
-    bool* estaId;
 
     //PRE:
     //POS: devuelve la altura del nodo, o 0 si no hay nodo
@@ -85,17 +84,19 @@ class Avl{
     void insertarRec(NodoAvl*& raiz, int id, string nombre, int puntaje){
         if (raiz==NULL){
             raiz=new NodoAvl(puntaje, id, nombre);
-            estaId[id]=true;
             if(cantidadTotal==0){
                 this->topUno=raiz;
             }else{
                 if (this->topUno->puntaje<puntaje || (this->topUno->puntaje==puntaje && this->topUno->id>id)) this->topUno=raiz;
             }
             this->cantidadTotal++;
+            insertarRec2(this->raizPuntaje, puntaje);
         }else if(raiz->id<id){
             insertarRec(raiz->der, id, nombre, puntaje);
         }else if(raiz->id>id){
             insertarRec(raiz->izq, id, nombre, puntaje);
+        }else{
+            return;
         }
         actualizarAltura(raiz);
         int balance=getBalance(raiz);
@@ -107,7 +108,7 @@ class Avl{
             rotacionDerecha(raiz);
         }else if(balance < -1 && raiz->der->id < id) { //caso derecha derecha
             rotacionIzquierda(raiz);
-        }else if( balance > 1 && raiz->der->id > id) { //caso derecha izquierda
+        }else if( balance < -1 && raiz->der->id > id) { //caso derecha izquierda
             rotacionDerecha(raiz->der);
             rotacionIzquierda(raiz);
         }
@@ -123,6 +124,7 @@ class Avl{
             insertarRec2(raiz->izq, puntaje);
         }else{
             raiz->cantidad++;
+            return;
         }
         actualizarAltura(raiz);
         int balance=getBalance(raiz);
@@ -133,7 +135,7 @@ class Avl{
             rotacionDerecha(raiz);
         }else if(balance < -1 && raiz->der->puntaje < puntaje) { //caso derecha derecha
             rotacionIzquierda(raiz);
-        }else if( balance > 1 && raiz->der->puntaje > puntaje) { //caso derecha izquierda
+        }else if( balance < -1 && raiz->der->puntaje > puntaje) { //caso derecha izquierda
             rotacionDerecha(raiz->der);
             rotacionIzquierda(raiz);
         }
@@ -167,17 +169,13 @@ class Avl{
         topUno=NULL;
         cantidadTotal=0;
         raizPuntaje=NULL;
-        estaId=new bool[100000000](); //creamos un array booleano con todos los id posibles
     }
     //PRE: 1 <= id <= 100000000, 0 <= puntaje <= 1000000.
     //POS: inserta un nuevo jugador con id unico, nombre y puntaje. Actualiza lo necesario para dejar consistencia
     void add(int id, string nombre, int puntaje){
-        assert(1<= id <= 100000000);
-        assert(0<= puntaje <= 1000000);
-        if(!estaId[id]){
-            insertarRec(this->raiz, id, nombre, puntaje);
-            insertarRec2(this->raizPuntaje, puntaje);
-        } 
+        assert((1<= id) && (id <= 100000000));
+        assert((0<= puntaje) && (puntaje <= 1000000));
+        insertarRec(this->raiz, id, nombre, puntaje);
     }
     //PRE: 1 <= id <= 100000000
     //POS: imprime información del jugador con ese id o "sin_jugadores" si no existe
@@ -202,7 +200,7 @@ class Avl{
     //PRE: 0 <= puntaje <= 1000000
     //POS: imprime la cantidad de jugadores con puntaje >= al del pasado por parametro
     void rank(int puntaje){
-        assert(0<=puntaje<=1000000);
+        assert((0<=puntaje) && (puntaje <=1000000));
         cout << rankRec(raizPuntaje, puntaje) << endl;
     }
 };
