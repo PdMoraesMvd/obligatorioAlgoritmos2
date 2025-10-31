@@ -5,19 +5,35 @@
 
 using namespace std;
 
-struct nodo
+struct nodoAyuda
 {
     int valor;
-    int largoPozo;
-    nodo()
+    int posicion;
+    nodoAyuda()
     {
         valor = 0;
-        largoPozo = 0;
+        posicion = 0;
     }
-    nodo(int _valor, int _largoPozo)
+    nodoAyuda(int _valor, int _posicion)
     {
         valor = _valor;
-        largoPozo = _largoPozo;
+        posicion = _posicion;
+    }
+};
+
+struct nodoPozo
+{
+    int inicio;
+    int largo;
+    nodoPozo()
+    {
+        inicio = 0;
+        largo = 0;
+    }
+    nodoPozo(int _inicio, int _largo)
+    {
+        inicio = _inicio;
+        largo = _largo;
     }
 };
 
@@ -118,47 +134,39 @@ public:
     }
 };
 
-void proceso(nodo *aProcesar, int m, int termina)
+void proceso(nodoAyuda *ayudas, nodoPozo *pozos, int M, int N)
 {
-    MaxHeap *heap = new MaxHeap(m);
-    int pos = 1;
+    MaxHeap *heap = new MaxHeap(M);
     bool llego = false;
+    int posPozos = 0;
+    int posAyudas = 0;
     int potencia = 1;
     int cantAyuda = 0;
     while (!llego)
     {
-        int valor = aProcesar[pos].valor;
-        if (valor == 0) // Avanzo sin hacer nada
+        int inicioPozo = pozos[posPozos].inicio;
+        int largoPozo = pozos[posPozos].largo;
+        while (posAyudas < M && ayudas[posAyudas].posicion < inicioPozo)
         {
-            pos++;
+            heap->agregar(ayudas[posAyudas].valor);
+            posAyudas++;
         }
-        else if (valor > 0) // Vecino que ofrece ayuda
+        while (!heap->esVacio() && potencia < largoPozo)
         {
-            heap->agregar(valor);
-            pos++;
+            int ayuda = heap->eliminarTope();
+            potencia += ayuda;
+            cantAyuda++;
         }
-        else // Aca hay un pozo, hay que ver si podemos saltarlo
+        if (potencia < largoPozo)
         {
-            int largo = aProcesar[pos].largoPozo;
-            while (!heap->esVacio() && potencia < largo + 1)
-            {
-                int tope = heap->eliminarTope();
-                potencia += tope;
-                cantAyuda++;
-            }
-            if (potencia < largo + 1) // Si todavia no le alcanza incluso tomando todas las ayudas no puede llegar
-            {
-                cout << "imposible" << endl;
-                return;
-            }
-            else // Si llega, salto el pozo
-            {
-                pos += largo;
-                potencia -= largo + 1;
-            }
+            cout << "Imposible" << endl;
+            return;
         }
-        if (pos >= termina)
+        posPozos++;
+        if (posPozos == N)
+        {
             llego = true;
+        }
     }
     cout << cantAyuda << endl;
 }
@@ -171,28 +179,25 @@ int main()
     cin >> N;
     cin >> M;
     cin >> F;
-    nodo *arr = new nodo[F + 1]();
+    nodoAyuda *ayudas = new nodoAyuda[M]();
+    nodoPozo *pozos = new nodoPozo[N]();
     for (int i = 0; i < N; i++)
     {
-        int I;
-        int D;
+        int I; // posicion inicio pozo
+        int D; // posicion final pozo
         cin >> I;
         cin >> D;
-        for (int j = I; j <= D; j++)
-        {
-            arr[j].largoPozo = D - I + 1;
-            arr[j].valor = -1;
-        }
+        pozos[i].inicio = I;
+        pozos[i].largo = D - I + 1;
     }
     for (int i = 0; i < M; i++)
     {
-        int x;
-        int p;
+        int x; // posicion casa vecino
+        int p; // potencia que ofrece
         cin >> x;
         cin >> p;
-        arr[x].largoPozo = 0;
-        arr[x].valor = p;
+        ayudas[i].posicion = x;
+        ayudas[i].valor = p;
     }
-    proceso(arr, M, F);
-    delete[] arr;
+    proceso(ayudas, pozos, M, N);
 }
