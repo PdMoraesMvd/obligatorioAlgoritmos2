@@ -41,7 +41,6 @@ void memo(int *arr, int largo)
     for (int i = 0; i < largo; i++)
     {
         cubo[i] = new int *[largo]();
-        // cout << largo << endl;
         for (int j = 0; j < largo; j++)
         {
             cubo[i][j] = new int[largo]();
@@ -53,8 +52,6 @@ void memo(int *arr, int largo)
             }
         }
     }
-
-    // cout << "test" << endl;
     int var = memo_rec(arr, 0, largo - 1, 0, cubo);
     cout << var << endl;
 }
