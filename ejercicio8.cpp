@@ -53,6 +53,15 @@ void memo(int *arr, int largo)
         }
     }
     int var = memo_rec(arr, 0, largo - 1, 0, cubo);
+    for (int i = 0; i < largo; i++)
+    {
+        for (int j = 0; j < largo; j++)
+        {
+            delete[] cubo[i][j];
+        }
+        delete[] cubo[i];
+    }
+    delete[] cubo;
     cout << var << endl;
 }
 
@@ -68,4 +77,5 @@ int main()
         arr[i] = n;
     }
     memo(arr, largo);
+    delete[] arr;
 }

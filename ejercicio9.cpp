@@ -29,7 +29,6 @@ void mejorPuntaje(int capacidadMB, int capacidadLineas, int cantidadObjetos, int
         int lineasEjercicioActual = cantLineas[ejercicioActual - 1];
         for (int capacidadMBActual = 0; capacidadMBActual <= capacidadMB; capacidadMBActual++)
         {
-
             for (int capacidadLineasActual = 0; capacidadLineasActual <= capacidadLineas; capacidadLineasActual++)
             {
                 // El ejercicio actual no entra en la capacidad actual
@@ -40,6 +39,7 @@ void mejorPuntaje(int capacidadMB, int capacidadLineas, int cantidadObjetos, int
                 }
                 else
                 {
+                    // si entra calculamos el valor entre usarlo o no usarlo al objeto y nos quedamos con el que nos de el mejor resultado entre ambos
                     int valorDeUsarElObjeto = puntajeEjercicioActual + tab[ejercicioActual - 1][capacidadMBActual - pesoEjercicioActual][capacidadLineasActual - lineasEjercicioActual];
                     int valorDeNoUsarElObjeto = tab[ejercicioActual - 1][capacidadMBActual][capacidadLineasActual];
                     tab[ejercicioActual][capacidadMBActual][capacidadLineasActual] = max(valorDeUsarElObjeto, valorDeNoUsarElObjeto);
@@ -47,7 +47,19 @@ void mejorPuntaje(int capacidadMB, int capacidadLineas, int cantidadObjetos, int
             }
         }
     }
+
     cout << tab[cantidadObjetos][capacidadMB][capacidadLineas] << endl;
+
+    // liberacion de memoria
+    for (int i = 0; i <= cantidadObjetos; i++)
+    {
+        for (int j = 0; j <= capacidadMB; j++)
+        {
+            delete[] tab[i][j];
+        }
+        delete[] tab[i];
+    }
+    delete[] tab;
 }
 
 int main()
@@ -74,5 +86,8 @@ int main()
         lineas[i] = linea;
     }
     mejorPuntaje(capacidadMB, capacidadLineas, cantidadObjetos, pesos, puntajes, lineas);
+    delete[] puntajes;
+    delete[] pesos;
+    delete[] lineas;
     return 0;
 }

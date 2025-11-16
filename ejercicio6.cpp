@@ -160,6 +160,8 @@ void proceso(nodoAyuda *ayudas, nodoPozo *pozos, int M, int N)
         if (potencia < largoPozo)
         {
             cout << "Imposible" << endl;
+            heap->destruir();
+            delete heap;
             return;
         }
         posPozos++;
@@ -169,6 +171,8 @@ void proceso(nodoAyuda *ayudas, nodoPozo *pozos, int M, int N)
         }
     }
     cout << cantAyuda << endl;
+    heap->destruir();
+    delete heap;
 }
 
 int main()
@@ -200,4 +204,6 @@ int main()
         ayudas[i].valor = p;
     }
     proceso(ayudas, pozos, M, N);
+    delete[] ayudas;
+    delete[] pozos;
 }

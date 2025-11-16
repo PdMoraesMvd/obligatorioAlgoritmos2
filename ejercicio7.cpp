@@ -64,6 +64,19 @@ public:
             aux = aux->sig;
         return aux->posicion;
     }
+    void destruir()
+    {
+        for (int i = 0; i < capacidad; i++)
+        {
+            while (tabla[i] != NULL)
+            {
+                nodoHash *aBorrar = tabla[i];
+                tabla[i] = tabla[i]->sig;
+                delete aBorrar;
+            }
+        }
+        delete[] tabla;
+    }
 };
 
 long long contarInversionesMitad(int *a, int inicio, int mitad, int final)
@@ -156,5 +169,6 @@ int main()
     long long total = contarInversiones(rankingAyudante, 0, N - 1);
     cout << total << endl;
     delete[] rankingAyudante;
+    tabla.destruir();
     return 0;
 }
