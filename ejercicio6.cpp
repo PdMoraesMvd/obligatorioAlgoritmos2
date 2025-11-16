@@ -145,19 +145,19 @@ void proceso(nodoAyuda *ayudas, nodoPozo *pozos, int M, int N)
     while (!llego)
     {
         int inicioPozo = pozos[posPozos].inicio;
-        int largoPozo = pozos[posPozos].largo;
+        int potenciaNecesaria = pozos[posPozos].largo + 1;
         while (posAyudas < M && ayudas[posAyudas].posicion < inicioPozo)
         {
             heap->agregar(ayudas[posAyudas].valor);
             posAyudas++;
         }
-        while (!heap->esVacio() && potencia < largoPozo)
+        while (!heap->esVacio() && potencia < potenciaNecesaria)
         {
             int ayuda = heap->eliminarTope();
             potencia += ayuda;
             cantAyuda++;
         }
-        if (potencia < largoPozo)
+        if (potencia < potenciaNecesaria)
         {
             cout << "Imposible" << endl;
             heap->destruir();
@@ -181,11 +181,11 @@ int main()
     int M;
     int F;
     cin >> N;
-    assert(N>=0 && N <= (10*10*10*10*10));
+    assert(N >= 0 && N <= (10 * 10 * 10 * 10 * 10));
     cin >> M;
-    assert(M>=0 && M <= (10*10*10*10*10));
+    assert(M >= 0 && M <= (10 * 10 * 10 * 10 * 10));
     cin >> F;
-    assert(N>=0 && N <= (10*10*10*10*10*10*10*10*10));
+    assert(N >= 0 && N <= (10 * 10 * 10 * 10 * 10 * 10 * 10 * 10 * 10));
     nodoAyuda *ayudas = new nodoAyuda[M]();
     nodoPozo *pozos = new nodoPozo[N]();
     for (int i = 0; i < N; i++)
@@ -194,7 +194,7 @@ int main()
         int D; // posicion final pozo
         cin >> I;
         cin >> D;
-        assert(I>=2 && D <= (F-1) && I<=D);
+        assert(I >= 2 && D <= (F - 1) && I <= D);
         pozos[i].inicio = I;
         pozos[i].largo = D - I + 1;
     }
@@ -204,7 +204,7 @@ int main()
         int p; // potencia que ofrece
         cin >> x;
         cin >> p;
-        assert(x>=2 && x<=F-1 && p>=1 && p <= (10*10*10*10*10*10*10*10*10));
+        assert(x >= 2 && x <= F - 1 && p >= 1 && p <= (10 * 10 * 10 * 10 * 10 * 10 * 10 * 10 * 10));
         ayudas[i].posicion = x;
         ayudas[i].valor = p;
     }
