@@ -69,6 +69,7 @@ int main()
 {
     int largo;
     cin >> largo;
+    assert(largo>=1 && largo<=100);
     int *arr = new int[largo];
     for (int i = 0; i < largo; i++)
     {

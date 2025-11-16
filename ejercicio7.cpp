@@ -150,6 +150,7 @@ int main()
 {
     int N;
     cin >> N;
+    assert(N>=0 && N <= (10*10*10*10*10));
     int *rankingAyudante = new int[N];
     tablaHash tabla(N);
     for (int i = 0; i < N; i++)

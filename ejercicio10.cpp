@@ -78,12 +78,15 @@ int main()
     cin >> productoABuscar;
     int P;
     cin >> P;
+    assert(P>=1 && P<=10000);
     for (int i = 0; i < P; i++)
     {
         int m;
         int n;
         cin >> m;
+        assert(m>=1&&m<=100);
         cin >> n;
+         assert(n>=1&&n<=100);
         string **tabla = new string *[m]();
         for (int j = 0; j < m; j++)
         {
